@@ -1,12 +1,12 @@
 import express from "express";
 import {
   registerUser,
-  verification,
+  verifySignupOtp,
+  resendSignupOtp,
   loginUser,
   logoutUser,
   forgetPassword,
-  verifyOTP,
-  changePassword,
+  resetPassword,
 } from "../controlers/userControler.js";
 import { isAuthenticated } from "../middleware/isAuthenticated.js";
 import { validateUser, userSchema } from "../validators/userValidate.js";
@@ -14,11 +14,11 @@ import { validateUser, userSchema } from "../validators/userValidate.js";
 const router = express.Router();
 
 router.post("/register", validateUser(userSchema), registerUser);
-router.post("/verify", verification);
+router.post("/verify-otp", verifySignupOtp);
+router.post("/resend-verification-otp", resendSignupOtp);
 router.post("/login", loginUser);
 router.post("/logout", isAuthenticated, logoutUser);
 router.post("/forgot-password", forgetPassword);
-router.post("/verify-otp/:email", verifyOTP);
-router.post("/change-password/:email", changePassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

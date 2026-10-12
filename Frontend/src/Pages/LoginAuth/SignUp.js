@@ -4,13 +4,10 @@ import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../api";
-import { useUser } from "../Navbar/context/userContext";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useUser();
-
   const from = location.state?.from?.pathname || "/";
 
   const [isLoading, setIsLoading] = useState(false);
@@ -45,20 +42,22 @@ const SignUp = () => {
       );
 
       if (res.data.success) {
-        if (res.data.accessToken && res.data.user) {
-          localStorage.setItem("token", res.data.accessToken);
-          localStorage.setItem("user", JSON.stringify(res.data.user));
-          setUser(res.data.user);
-        }
         navigate("/verify", {
-          state: { from },
+          state: { from, email: formData.email.trim().toLowerCase() },
         });
+        toast.success(res.data.message);
       }
-      toast.success(res.data.message);
     } catch (error) {
       console.log("AXIOS ERROR:", error.response?.data);
       console.log("STATUS:", error.response?.status);
-      toast.error(error.response?.data?.message || "Signup failed");
+      const message = error.code === "ECONNABORTED"
+        ? "The server took too long to respond. Please try again in a moment."
+        : error.response?.data?.message
+          || (error.request
+            ? "Could not reach the server. Check the backend service and try again."
+            : error.message)
+          || "Signup failed";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

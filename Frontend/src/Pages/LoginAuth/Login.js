@@ -52,7 +52,14 @@ const Login = () => {
     } catch (error) {
       console.log("AXIOS ERROR:", error.response?.data);
       console.log("STATUS:", error.response?.status);
-      toast.error(error.response?.data?.message || error.message || "Login failed");
+      const message = error.code === "ECONNABORTED"
+        ? "The server took too long to respond. Please try again in a moment."
+        : error.response?.data?.message
+          || (error.request
+            ? "Could not reach the server. Check the backend service and try again."
+            : error.message)
+          || "Login failed";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

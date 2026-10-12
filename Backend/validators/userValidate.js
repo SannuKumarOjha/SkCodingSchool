@@ -8,6 +8,7 @@ export const userSchema = yup.object({
   .required("Username is required"),
   email:yup
   .string()
+  .trim()
   .email("Invalid email format")
   .required(),
     password:yup

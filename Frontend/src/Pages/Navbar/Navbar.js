@@ -118,8 +118,10 @@ const Navbar = ({ theme, setTheme }) => {
         <div className="dark-light">
           <button
             type="button"
+            className="theme-toggle"
             onClick={toggle_mode}
             aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
             <img
               src={theme === "light" ? darkIcon : lightIcon}
@@ -143,6 +145,7 @@ const Navbar = ({ theme, setTheme }) => {
           className="menu"
           onClick={() => setMenuOpen((isOpen) => !isOpen)}
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          title={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={menuOpen}
         >
           {menuOpen ? <IoCloseSharp /> : <CiMenuFries />}

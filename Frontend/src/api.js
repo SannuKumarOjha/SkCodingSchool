@@ -5,6 +5,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const api = axios.create({
   baseURL: (apiUrl || (isProduction ? "" : "http://localhost:8000")).replace(/\/+$/, ""),
+  timeout: 60000,
 });
 
 api.interceptors.request.use((config) => {

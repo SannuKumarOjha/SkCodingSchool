@@ -23,17 +23,37 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    token: {
+    resetOtpHash: {
       type: String,
       default: null,
     },
-    otp: {
-      type: String,
-      default: null,
-    },
-    otpExpiration: {
+    resetOtpExpiresAt: {
       type: Date,
       default: null,
+    },
+    resetOtpSentAt: {
+      type: Date,
+      default: null,
+    },
+    resetOtpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    signupOtpHash: {
+      type: String,
+      default: null,
+    },
+    signupOtpExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    signupOtpSentAt: {
+      type: Date,
+      default: null,
+    },
+    signupOtpAttempts: {
+      type: Number,
+      default: 0,
     },
   },
   {

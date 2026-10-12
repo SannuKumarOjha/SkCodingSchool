@@ -8,6 +8,7 @@ import DSA from "./Pages/DSA";
 import Courses from "./Pages/Courses";
 import Login from "./Pages/LoginAuth/Login";
 import SignUp from "./Pages/LoginAuth/SignUp";
+import ForgotPassword from "./Pages/LoginAuth/ForgotPassword";
 import PageNotFound from "./Pages/PageNotFound";
 import YtVideo from "./Pages/YouTubeAPI/YtVideo";
 import Html from "./Pages/PracticeItems/HTML/Html";
@@ -16,7 +17,6 @@ import RGPV from "./Pages/RgpvNotes/MainRgpv";
 import Branch from "./Pages/RgpvNotes/Branch"
 import CSE from "./Pages/RgpvNotes/NotesPages/CSE";
 import HelpInInterview from "./Pages/HelpInInterview";
-import VerifyEmail from "./Pages/LoginAuth/VerifyEmail";
 import Verify from "./Pages/LoginAuth/Verify";
 import ProtectedRoute from "./Pages/components/ProtectedRoutes";
 import HtmlIntro from "./Pages/PracticeItems/HTML/Topics/htmlIntro";
@@ -68,8 +68,8 @@ const App = () => {
 
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/verify" element={<VerifyEmail />} />
-            <Route path="/verify/:token" element={<Verify />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify" element={<Verify />} />
 
             <Route path="/ytvideo" element={<YtVideo />} />
             <Route path="/rgpv-notes" element={<ProtectedRoute><RGPV /></ProtectedRoute>} />
