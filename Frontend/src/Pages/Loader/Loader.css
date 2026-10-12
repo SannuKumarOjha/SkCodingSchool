@@ -1,0 +1,149 @@
+  .loader {
+      color: rgb(124, 124, 124);
+      font-family: "Poppins", sans-serif;
+      font-weight: 500;
+      font-size: 25px;
+      -webkit-box-sizing: content-box;
+      box-sizing: content-box;
+      height: 40px;
+      padding: 10px 10px;
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      border-radius: 8px;
+  }
+
+  .words {
+      overflow: hidden;
+      position: relative;
+  }
+
+  .words::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(var(--bg-color) 10%,
+              transparent 30%,
+              transparent 70%,
+              var(--bg-color) 90%);
+      z-index: 20;
+  }
+
+  .word {
+      display: block;
+      height: 100%;
+      padding-left: 6px;
+      color: #956afa;
+      animation: spin_4991 4s infinite;
+  }
+
+  .card {
+      position: fixed;
+      inset: 0;
+      background: black;
+      transition: opacity 0.8s ease;
+      animation: clr 4s ease-in-out;
+  }
+
+  .card.hide {
+      opacity: 0;
+      pointer-events: none;
+  }
+
+  @keyframes clr {
+      0% {
+          background: #000;
+      }
+
+      20% {
+          background: #122853;
+      }
+
+      50% {
+          background: #020442;
+      }
+
+      70% {
+          background: #470332;
+      }
+
+      100% {
+          background: #000;
+      }
+  }
+
+  @keyframes spin_4991 {
+      10% {
+          -webkit-transform: translateY(-102%);
+          transform: translateY(-102%);
+      }
+
+      25% {
+          -webkit-transform: translateY(-100%);
+          transform: translateY(-100%);
+      }
+
+      35% {
+          -webkit-transform: translateY(-202%);
+          transform: translateY(-202%);
+      }
+
+      50% {
+          -webkit-transform: translateY(-200%);
+          transform: translateY(-200%);
+      }
+
+      60% {
+          -webkit-transform: translateY(-302%);
+          transform: translateY(-302%);
+      }
+
+      75% {
+          -webkit-transform: translateY(-300%);
+          transform: translateY(-300%);
+      }
+
+      85% {
+          -webkit-transform: translateY(-402%);
+          transform: translateY(-402%);
+      }
+
+      100% {
+          -webkit-transform: translateY(-400%);
+          transform: translateY(-400%);
+      }
+  }
+
+  .card {
+      position: absolute;
+      top: 0;
+  }
+
+  .animate {
+      position: absolute;
+      top: 0;
+      animation: animateOver 2s ease-in-out;
+  }
+
+  @keyframes animateOver {
+      0% {
+          top: 0;
+      }
+
+      25% {
+          top: -100px;
+      }
+
+      50% {
+          top: -300px;
+      }
+
+      70% {
+          top: -500px;
+      }
+
+      100% {
+          top: -700px;
+          display: none;
+      }
+  }

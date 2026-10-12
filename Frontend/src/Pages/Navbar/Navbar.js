@@ -1,0 +1,162 @@
+import React, { useState, useRef, useEffect } from "react";
+import { CiMenuFries } from "react-icons/ci";
+import { IoCloseSharp } from "react-icons/io5";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "./context/userContext";
+import darkIcon from "../../Photos/dark.png";
+import lightIcon from "../../Photos/light.png";
+import "./Navbar.css";
+
+const Navbar = ({ theme, setTheme }) => {
+  const { user, setUser } = useUser();
+  const navigate = useNavigate();
+
+  const [menu, setMenu] = useState(<CiMenuFries />);
+  const [count, setCount] = useState(0);
+  const [open, setOpen] = useState(false);
+
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const autoHide = () => {
+    const navList = document.querySelector(".res-items");
+    navList.classList.remove("showNav");
+    setMenu(<CiMenuFries />);
+    setCount(0);
+  };
+
+  const showNav = () => {
+    if (count === 0) {
+      const navList = document.querySelector(".res-items");
+      navList.classList.add("showNav");
+      setMenu(<IoCloseSharp />);
+      setCount(1);
+    } else {
+      autoHide();
+    }
+  };
+
+  const toggle_mode = () => {
+    theme === "light" ? setTheme("dark") : setTheme("light");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    setOpen(false);
+    autoHide();
+    navigate("/login");
+  };
+
+  return (
+    <nav className="navbar fixed top-0 z-50 text-black dark:text-white">
+      <div className="logo">
+        <Link to="/">SkCodingSchool</Link>
+      </div>
+
+      <div className="nav-btns">
+        <div className="res-items flex gap-4">
+          <Link to="/" className="link-tag" onClick={autoHide}>
+            Home
+          </Link>
+
+          <Link to="/courses" className="link-tag" onClick={autoHide}>
+            Courses
+          </Link>
+
+          <Link to="/practice" className="link-tag" onClick={autoHide}>
+            Practice
+          </Link>
+
+          <Link to="/DSA-sheet" className="link-tag" onClick={autoHide}>
+            DSA Sheet
+          </Link>
+
+          <Link to="/rgpv-placement" className="link-tag" onClick={autoHide}>
+            RGPV | Placement
+          </Link>
+        </div>
+
+        {/* User Section */}
+        {user ? (
+          <div className="relative" ref={dropdownRef}>
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => setOpen(!open)}
+            >
+              <img
+                src={`https://ui-avatars.com/api/?name=${user.username}`}
+                alt="profile"
+                className="w-9 h-9 rounded-full border object-cover"
+              />
+            </div>
+
+            {open && (
+              <div className="absolute right-0 mt-3 w-44 bg-white dark:bg-gray-900 border rounded-xl shadow-xl overflow-hidden text-sm">
+                <Link
+                  to="/profile"
+                  onClick={() => {
+                    setOpen(false);
+                    autoHide();
+                  }}
+                  className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                >
+                  View Profile
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-3 text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link to="/login" className="link-tag" onClick={autoHide}>
+            Login
+          </Link>
+        )}
+
+        {/* Dark Mode Toggle */}
+        <div className="dark-light">
+          <img
+            onClick={toggle_mode}
+            src={theme === "light" ? darkIcon : lightIcon}
+            alt="ThemeChange"
+            className="dark-light-img"
+          />
+        </div>
+
+        {/* Topmate Button */}
+        <a
+          href="https://topmate.io/sannukumarojha"
+          target="_blank"
+          rel="noreferrer"
+          className="topmate"
+        >
+          Book 1:1
+        </a>
+        <div className="menu" onClick={showNav}>
+          {menu}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

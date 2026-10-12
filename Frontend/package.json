@@ -1,0 +1,67 @@
+{
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.6.0",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.1.5",
+    "@react-oauth/google": "^0.12.2",
+    "@tailwindcss/forms": "^0.5.9",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "antd": "^5.22.1",
+    "axios": "^1.13.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "flowbite-react": "^0.10.2",
+    "gsap": "^3.12.5",
+    "jwt-decode": "^4.0.0",
+    "lucide": "^0.563.0",
+    "lucide-react": "^0.563.0",
+    "mdb-react-ui-kit": "^9.0.0",
+    "motion": "^11.11.17",
+    "my-app": "file:",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-pdf": "^10.0.1",
+    "react-scripts": "5.0.1",
+    "shadcn": "^3.8.4",
+    "sonner": "^2.0.7",
+    "sweetalert2": "^11.14.5",
+    "tailwind-merge": "^3.4.0",
+    "tw-animate-css": "^1.4.0",
+    "web-vitals": "^2.1.4",
+    "react-router-dom": "^6.30.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14"
+  }
+}

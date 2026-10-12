@@ -1,0 +1,37 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/genai": "^1.43.0",
+    "axios": "^1.13.6",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "curl": "^0.1.4",
+    "dotenv": "^17.4.2",
+    "express": "^5.3.0",
+    "fs": "^0.0.1-security",
+    "groq-sdk": "^1.6.0",
+    "handlebars": "^4.7.8",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongod": "^2.0.0",
+    "mongodb": "^7.1.0",
+    "mongoose": "^9.1.6",
+    "nodemailer": "^8.0.0",
+    "nodemon": "^3.1.11",
+    "path": "^0.12.7",
+    "url": "^0.11.4",
+    "yup": "^1.7.1"
+  }
+}
