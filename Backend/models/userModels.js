@@ -11,6 +11,19 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    skills: {
+      type: [String],
+      default: [],
+    },
+    readingProgress: {
+      type: [String],
+      default: [],
+    },
     password: {
       type: String,
       required: true,
@@ -52,6 +65,28 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     signupOtpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    pendingEmail: {
+      type: String,
+      default: null,
+      lowercase: true,
+      trim: true,
+    },
+    emailChangeOtpHash: {
+      type: String,
+      default: null,
+    },
+    emailChangeOtpExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    emailChangeOtpSentAt: {
+      type: Date,
+      default: null,
+    },
+    emailChangeOtpAttempts: {
       type: Number,
       default: 0,
     },

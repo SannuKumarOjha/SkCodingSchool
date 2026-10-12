@@ -7,6 +7,40 @@ import { Session } from "../models/sessionModel.js";
 import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
 
 const hashOtp = (otp) => createHash("sha256").update(otp).digest("hex");
+const allowedReadingLessons = new Set([
+  "html-home",
+  "html-introduction",
+  "html-basic",
+  "html-editors",
+  "html-elements",
+  "html-attributes",
+  "html-headings",
+  "html-paragraphs",
+  "html-styles",
+  "html-formattings",
+  "css-full-course",
+]);
+
+const toPublicUser = (user) => {
+  const publicUser = user.toObject();
+  [
+    "password",
+    "signupOtpHash",
+    "signupOtpExpiresAt",
+    "signupOtpSentAt",
+    "signupOtpAttempts",
+    "resetOtpHash",
+    "resetOtpExpiresAt",
+    "resetOtpSentAt",
+    "resetOtpAttempts",
+    "pendingEmail",
+    "emailChangeOtpHash",
+    "emailChangeOtpExpiresAt",
+    "emailChangeOtpSentAt",
+    "emailChangeOtpAttempts",
+  ].forEach((key) => delete publicUser[key]);
+  return publicUser;
+};
 
 const getEmailDeliveryHelp = (error) => {
   const message = String(error?.message || "");
@@ -412,8 +446,7 @@ export const loginUser = async (req, res) => {
     });
     user.isLoggedIn = true;
     await user.save();
-    const authenticatedUser = user.toObject();
-    delete authenticatedUser.password;
+    const authenticatedUser = toPublicUser(user);
     return res.status(200).json({
       success: true,
       message: `Welcome back ${user.username}`,
@@ -431,7 +464,7 @@ export const loginUser = async (req, res) => {
 
 export const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
+    const user = await User.findById(req.userId);
     if (!user || user.isVerified !== true) {
       return res.status(403).json({
         success: false,
@@ -441,13 +474,295 @@ export const getCurrentUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      user,
+      user: toPublicUser(user),
     });
   } catch (error) {
     console.error("Fetching authenticated user failed:", error);
     return res.status(500).json({
       success: false,
       message: "Could not validate your session.",
+    });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user || user.isVerified !== true) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const { username, phone, skills } = req.body;
+    if (username !== undefined) {
+      if (
+        typeof username !== "string"
+        || username.trim().length < 3
+        || username.trim().length > 50
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Name must be between 3 and 50 characters.",
+        });
+      }
+      user.username = username.trim();
+    }
+
+    if (phone !== undefined) {
+      if (
+        typeof phone !== "string"
+        || phone.trim().length > 25
+        || (phone.trim() && !/^[+()\d\s.-]{7,25}$/.test(phone.trim()))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Enter a valid phone number, or leave it blank.",
+        });
+      }
+      user.phone = phone.trim();
+    }
+
+    if (skills !== undefined) {
+      if (
+        !Array.isArray(skills)
+        || skills.length > 20
+        || skills.some((skill) => (
+          typeof skill !== "string"
+          || skill.trim().length < 1
+          || skill.trim().length > 40
+        ))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Add up to 20 skills, each between 1 and 40 characters.",
+        });
+      }
+      user.skills = [...new Set(skills.map((skill) => skill.trim()))];
+    }
+
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      user: toPublicUser(user),
+    });
+  } catch (error) {
+    console.error("Updating profile failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not update your profile. Please try again.",
+    });
+  }
+};
+
+export const recordReadingProgress = async (req, res) => {
+  try {
+    const { lessonId } = req.body;
+    if (typeof lessonId !== "string" || !allowedReadingLessons.has(lessonId)) {
+      return res.status(400).json({
+        success: false,
+        message: "This lesson is not available for progress tracking.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $addToSet: { readingProgress: lessonId } },
+      { new: true }
+    );
+    if (!user || user.isVerified !== true) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      readingProgress: user.readingProgress,
+    });
+  } catch (error) {
+    console.error("Recording reading progress failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not save reading progress.",
+    });
+  }
+};
+
+export const requestEmailChangeOtp = async (req, res) => {
+  try {
+    const email = typeof req.body.email === "string"
+      ? req.body.email.trim().toLowerCase()
+      : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a valid email address.",
+      });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user || user.isVerified !== true) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+    if (email === user.email) {
+      return res.status(400).json({
+        success: false,
+        message: "This is already your account email.",
+      });
+    }
+    if (await User.exists({ email, _id: { $ne: user._id } })) {
+      return res.status(409).json({
+        success: false,
+        message: "An account already uses this email address.",
+      });
+    }
+
+    if (
+      user.emailChangeOtpSentAt
+      && Date.now() < user.emailChangeOtpSentAt.getTime() + 60_000
+    ) {
+      const retryAfterSeconds = Math.ceil(
+        (user.emailChangeOtpSentAt.getTime() + 60_000 - Date.now()) / 1000
+      );
+      return res.status(429).json({
+        success: false,
+        message: "Please wait before requesting another code.",
+        retryAfterSeconds,
+      });
+    }
+
+    const otp = randomInt(100000, 1000000).toString();
+    user.pendingEmail = email;
+    user.emailChangeOtpHash = hashOtp(otp);
+    user.emailChangeOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    user.emailChangeOtpSentAt = new Date();
+    user.emailChangeOtpAttempts = 0;
+    await user.save();
+
+    try {
+      await sendOtpMail(email, otp, user.username, "confirm your new email address");
+    } catch (error) {
+      user.pendingEmail = null;
+      user.emailChangeOtpHash = null;
+      user.emailChangeOtpExpiresAt = null;
+      user.emailChangeOtpSentAt = null;
+      await user.save();
+      throw error;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `A verification code was sent to ${email}.`,
+    });
+  } catch (error) {
+    console.error("Requesting email change verification failed:", error);
+    if (error.statusCode === 429) {
+      return res.status(429).json({
+        success: false,
+        message: error.message,
+        retryAfterSeconds: error.retryAfterSeconds,
+      });
+    }
+    if (isEmailDeliveryError(error)) {
+      return res.status(502).json({
+        success: false,
+        message: getEmailDeliveryHelp(error),
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Could not send the verification code. Please try again.",
+    });
+  }
+};
+
+export const verifyEmailChangeOtp = async (req, res) => {
+  try {
+    const otp = typeof req.body.otp === "string" ? req.body.otp.trim() : "";
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter the 6-digit code sent to your new email address.",
+      });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user || !user.pendingEmail || !user.emailChangeOtpHash || !user.emailChangeOtpExpiresAt) {
+      return res.status(400).json({
+        success: false,
+        message: "No active email verification code. Request a new one.",
+      });
+    }
+    if (user.emailChangeOtpExpiresAt.getTime() <= Date.now()) {
+      user.pendingEmail = null;
+      user.emailChangeOtpHash = null;
+      user.emailChangeOtpExpiresAt = null;
+      user.emailChangeOtpSentAt = null;
+      user.emailChangeOtpAttempts = 0;
+      await user.save();
+      return res.status(400).json({
+        success: false,
+        message: "The code has expired. Request a new one.",
+      });
+    }
+    if (user.emailChangeOtpAttempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many incorrect attempts. Request a new code.",
+      });
+    }
+
+    const candidateHash = Buffer.from(hashOtp(otp), "hex");
+    const storedHash = Buffer.from(user.emailChangeOtpHash, "hex");
+    if (
+      candidateHash.length !== storedHash.length
+      || !timingSafeEqual(candidateHash, storedHash)
+    ) {
+      user.emailChangeOtpAttempts += 1;
+      await user.save();
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect verification code.",
+      });
+    }
+    if (await User.exists({ email: user.pendingEmail, _id: { $ne: user._id } })) {
+      return res.status(409).json({
+        success: false,
+        message: "An account already uses this email address. Request a code for another email.",
+      });
+    }
+
+    user.email = user.pendingEmail;
+    user.pendingEmail = null;
+    user.emailChangeOtpHash = null;
+    user.emailChangeOtpExpiresAt = null;
+    user.emailChangeOtpSentAt = null;
+    user.emailChangeOtpAttempts = 0;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Email address updated successfully.",
+      user: toPublicUser(user),
+    });
+  } catch (error) {
+    console.error("Verifying email change failed:", error);
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An account already uses this email address.",
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Could not verify the new email. Please try again.",
     });
   }
 };

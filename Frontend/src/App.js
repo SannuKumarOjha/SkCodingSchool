@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Home from "./Pages/Home";
 import Layout from "./Layout";
 import "./App.css";
@@ -22,8 +22,14 @@ import ProtectedRoute from "./Pages/components/ProtectedRoutes";
 import HtmlIntro from "./Pages/PracticeItems/HTML/Topics/htmlIntro";
 import Chatbot from "./Pages/components/Chatbot";
 import Loader from "./Pages/Loader/Loader";
+import Profile from "./Pages/Profile/Profile";
+import { useUser } from "./Pages/Navbar/context/userContext";
+import { getReadingLesson } from "./data/readingLessons";
+import api from "./api";
 
 const App = () => {
+  const location = useLocation();
+  const { user, setUser } = useUser();
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "dark"
   );
@@ -33,6 +39,32 @@ const App = () => {
     localStorage.setItem("theme", theme);
     document.documentElement.style.colorScheme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    const lesson = getReadingLesson(location.pathname);
+    const token = localStorage.getItem("token");
+    if (!user?._id || !lesson || !token) return;
+
+    api.post(
+      "/user/progress",
+      { lessonId: lesson.id },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then(({ data }) => {
+        setUser((currentUser) => {
+          if (!currentUser) return currentUser;
+          const updatedUser = {
+            ...currentUser,
+            readingProgress: data.readingProgress,
+          };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          return updatedUser;
+        });
+      })
+      .catch((error) => {
+        console.error("Could not save reading progress:", error);
+      });
+  }, [location.pathname, setUser, user?._id]);
 
   useEffect(() => {
     const visited = localStorage.getItem("visited");
@@ -64,6 +96,7 @@ const App = () => {
             <Route path="/practice" element={<Practice />} />
             <Route path="/DSA-sheet" element={<ProtectedRoute><DSA /></ProtectedRoute>} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             {/* Login | Signup | Verify Routes */}
 
             <Route path="/login" element={<Login />} />

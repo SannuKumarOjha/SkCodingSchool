@@ -122,7 +122,7 @@ const ForgotPassword = () => {
                 onChange={(event) => setEmail(event.target.value)}
                 required
                 className="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                placeholder="you@example.com"
+                placeholder="skcodingschool@gmail.com"
               />
             </div>
             <button

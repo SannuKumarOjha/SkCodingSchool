@@ -19,9 +19,12 @@ export const sendOtpMail = async (
     purpose = "verify your email address"
 ) => {
     const isPasswordReset = purpose === "reset your password";
+    const isEmailChange = purpose === "confirm your new email address";
     const subject = isPasswordReset
         ? "SKCodingSchool | Password reset code"
-        : "SKCodingSchool | Verify your email";
+        : isEmailChange
+            ? "SKCodingSchool | Confirm your new email"
+            : "SKCodingSchool | Verify your email";
     const html = emailTemplate({ username, otp, purpose });
     const text = [
         "SKCodingSchool account security",
