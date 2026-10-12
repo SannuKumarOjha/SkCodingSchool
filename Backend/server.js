@@ -54,9 +54,13 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => {
     const databaseConnected = mongoose.connection.readyState === 1;
+    const emailConfigured = Boolean(
+        process.env.RESEND_API_KEY && process.env.MAIL_FROM
+    );
     res.status(databaseConnected ? 200 : 503).json({
         status: databaseConnected ? 'ok' : 'degraded',
         database: databaseConnected ? 'connected' : 'disconnected',
+        emailConfigured,
     });
 });
 

@@ -8,6 +8,32 @@ import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
 
 const hashOtp = (otp) => createHash("sha256").update(otp).digest("hex");
 
+const getEmailDeliveryHelp = (error) => {
+  const message = String(error?.message || "");
+
+  if (
+    message.includes("Email delivery is not configured")
+    || message.includes("MAIL_FROM must be set")
+  ) {
+    return "OTP email is not configured. In Render, set RESEND_API_KEY and MAIL_FROM to an address on a verified Resend domain, then redeploy.";
+  }
+
+  if (message.includes("Resend email delivery failed")) {
+    return "Resend rejected the email. Check the API key and verify the sender domain used by MAIL_FROM in Resend, then try again.";
+  }
+
+  return "The email provider could not send the code. Check the Render service logs and Resend delivery status, then try again.";
+};
+
+const isEmailDeliveryError = (error) => {
+  const message = String(error?.message || "");
+  return message.includes("Email delivery is not configured")
+    || message.includes("MAIL_FROM must be set")
+    || message.includes("Resend email delivery failed")
+    || message.includes("fetch failed")
+    || error?.name === "TimeoutError";
+};
+
 const issueSignupOtp = async (pendingSignup) => {
   const resendAvailableAt = pendingSignup.otpSentAt
     ? pendingSignup.otpSentAt.getTime() + 60_000
@@ -80,7 +106,7 @@ export const registerUser = async (req, res) => {
       console.error("Signup verification email failed:", error);
       return res.status(502).json({
         success: false,
-        message: "Your signup is pending, but the verification email could not be sent. Please try resending the code.",
+        message: `Your signup is pending, but its OTP email was not sent. ${getEmailDeliveryHelp(error)}`,
       });
     }
 
@@ -106,7 +132,7 @@ export const registerUser = async (req, res) => {
       console.error("Signup verification email failed:", error);
       return res.status(502).json({
         success: false,
-        message: "Your signup is pending, but the verification email could not be sent. Please try resending the code.",
+        message: `Your signup is pending, but its OTP email was not sent. ${getEmailDeliveryHelp(error)}`,
       });
     }
     console.error("Signup failed:", error);
@@ -338,7 +364,7 @@ export const resendSignupOtp = async (req, res) => {
     console.error("Resending signup OTP failed:", error);
     return res.status(502).json({
       success: false,
-      message: "Could not send the verification code. Please try again later.",
+      message: getEmailDeliveryHelp(error),
     });
   }
 };
@@ -497,6 +523,12 @@ export const forgetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Password reset code request failed:", error);
+    if (isEmailDeliveryError(error)) {
+      return res.status(502).json({
+        success: false,
+        message: getEmailDeliveryHelp(error),
+      });
+    }
     return res.status(500).json({
       success: false,
       message: "Could not send the reset code. Please try again later.",

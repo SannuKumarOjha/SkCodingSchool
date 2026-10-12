@@ -51,7 +51,7 @@ const SignUp = () => {
       const serverMessage = error.response?.data?.message || "";
       if (
         [502, 503].includes(error.response?.status)
-        && /(?:account is saved|signup is pending).*(?:verification email|code).*(?:could not be sent|failed)/i.test(serverMessage)
+        && /(?:account is saved|signup is pending)/i.test(serverMessage)
       ) {
         toast.error(serverMessage);
         navigate("/verify", {
