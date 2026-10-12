@@ -52,7 +52,7 @@ const Login = () => {
     } catch (error) {
       console.log("AXIOS ERROR:", error.response?.data);
       console.log("STATUS:", error.response?.status);
-      toast.error(error.response?.data?.message || "Login failed");
+      toast.error(error.response?.data?.message || error.message || "Login failed");
     } finally {
       setIsLoading(false);
     }

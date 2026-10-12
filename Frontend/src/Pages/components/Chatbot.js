@@ -57,10 +57,16 @@ const Chatbot = () => {
                 return [...updated, { sender: "bot", text: res.data.reply }];
             });
         } catch (error) {
+            const errorMessage = error.response?.data?.error
+                || (error.message?.startsWith("REACT_APP_API_URL")
+                    ? error.message
+                    : error.response
+                    ? "The AI assistant is temporarily unavailable. Please try again later."
+                    : "Could not reach the server. Check the backend deployment and REACT_APP_API_URL.");
             setMessages((prev) => {
                 const updated = [...prev];
                 updated.pop();
-                return [...updated, { sender: "bot", text: "⚠ Server error. Please try again." }];
+                return [...updated, { sender: "bot", text: `⚠ ${errorMessage}` }];
             });
         } finally {
             setIsSending(false);

@@ -24,8 +24,15 @@ import Chatbot from "./Pages/components/Chatbot";
 import Loader from "./Pages/Loader/Loader";
 
 const App = () => {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("theme") || "dark"
+  );
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
 
   useEffect(() => {
     const visited = localStorage.getItem("visited");

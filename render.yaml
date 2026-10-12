@@ -14,6 +14,8 @@ services:
         sync: false
       - key: MONGO_DB_NAME
         value: SkCodingSchool
+      - key: MONGO_DNS_SERVERS
+        value: 1.1.1.1,8.8.8.8
       - key: SECRET_KEY
         generateValue: true
       - key: GROQ_API_KEY
@@ -23,6 +25,6 @@ services:
       - key: MAIL_PASS
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://skcodingschool.vercel.app
       - key: CORS_ORIGINS
-        sync: false
+        value: https://skcodingschool.vercel.app

@@ -1,23 +1,37 @@
 
 import express from "express";
 import Groq from "groq-sdk";
-import "dotenv/config";
 
 const router = express.Router();
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 router.post("/", async (req, res) => {
   try {
-    const userMessage = req.body.message;
+    const userMessage =
+      typeof req.body?.message === "string" ? req.body.message.trim() : "";
 
     if (!userMessage) {
       return res.status(400).json({
         error: "Message is required",
       });
     }
+
+    if (userMessage.length > 2000) {
+      return res.status(400).json({
+        error: "Message must be 2000 characters or fewer",
+      });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      console.error("AI API error: GROQ_API_KEY is not configured");
+      return res.status(503).json({
+        error: "AI assistant is not configured. Please contact the site administrator.",
+      });
+    }
+
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+    const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
     const systemPrompt = `
 You are the official AI assistant of SKCodingSchool.com
@@ -55,7 +69,7 @@ Special Instruction:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model,
       messages: [
         {
           role: "system",
@@ -76,10 +90,10 @@ Special Instruction:
 
     res.json({ reply });
   } catch (error) {
-    console.error("AI API error:", error.message);
+    console.error("AI API error:", error);
 
-    res.status(500).json({
-      error: "AI Server Error",
+    res.status(502).json({
+      error: "The AI assistant is temporarily unavailable. Please try again later.",
     });
   }
 });

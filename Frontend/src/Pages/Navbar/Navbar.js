@@ -11,8 +11,7 @@ const Navbar = ({ theme, setTheme }) => {
   const { user, setUser } = useUser();
   const navigate = useNavigate();
 
-  const [menu, setMenu] = useState(<CiMenuFries />);
-  const [count, setCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
 
   const dropdownRef = useRef(null);
@@ -30,23 +29,7 @@ const Navbar = ({ theme, setTheme }) => {
     };
   }, []);
 
-  const autoHide = () => {
-    const navList = document.querySelector(".res-items");
-    navList.classList.remove("showNav");
-    setMenu(<CiMenuFries />);
-    setCount(0);
-  };
-
-  const showNav = () => {
-    if (count === 0) {
-      const navList = document.querySelector(".res-items");
-      navList.classList.add("showNav");
-      setMenu(<IoCloseSharp />);
-      setCount(1);
-    } else {
-      autoHide();
-    }
-  };
+  const closeMenu = () => setMenuOpen(false);
 
   const toggle_mode = () => {
     theme === "light" ? setTheme("dark") : setTheme("light");
@@ -57,7 +40,7 @@ const Navbar = ({ theme, setTheme }) => {
     localStorage.removeItem("user");
     setUser(null);
     setOpen(false);
-    autoHide();
+    closeMenu();
     navigate("/login");
   };
 
@@ -68,24 +51,24 @@ const Navbar = ({ theme, setTheme }) => {
       </div>
 
       <div className="nav-btns">
-        <div className="res-items flex gap-4">
-          <Link to="/" className="link-tag" onClick={autoHide}>
+        <div className={`res-items${menuOpen ? " showNav" : ""}`}>
+          <Link to="/" className="link-tag" onClick={closeMenu}>
             Home
           </Link>
 
-          <Link to="/courses" className="link-tag" onClick={autoHide}>
+          <Link to="/courses" className="link-tag" onClick={closeMenu}>
             Courses
           </Link>
 
-          <Link to="/practice" className="link-tag" onClick={autoHide}>
+          <Link to="/practice" className="link-tag" onClick={closeMenu}>
             Practice
           </Link>
 
-          <Link to="/DSA-sheet" className="link-tag" onClick={autoHide}>
+          <Link to="/DSA-sheet" className="link-tag" onClick={closeMenu}>
             DSA Sheet
           </Link>
 
-          <Link to="/rgpv-placement" className="link-tag" onClick={autoHide}>
+          <Link to="/rgpv-placement" className="link-tag" onClick={closeMenu}>
             RGPV | Placement
           </Link>
         </div>
@@ -110,7 +93,7 @@ const Navbar = ({ theme, setTheme }) => {
                   to="/profile"
                   onClick={() => {
                     setOpen(false);
-                    autoHide();
+                    closeMenu();
                   }}
                   className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                 >
@@ -127,19 +110,23 @@ const Navbar = ({ theme, setTheme }) => {
             )}
           </div>
         ) : (
-          <Link to="/login" className="link-tag" onClick={autoHide}>
+          <Link to="/login" className="link-tag login-link" onClick={closeMenu}>
             Login
           </Link>
         )}
 
-        {/* Dark Mode Toggle */}
         <div className="dark-light">
-          <img
+          <button
+            type="button"
             onClick={toggle_mode}
-            src={theme === "light" ? darkIcon : lightIcon}
-            alt="ThemeChange"
-            className="dark-light-img"
-          />
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            <img
+              src={theme === "light" ? darkIcon : lightIcon}
+              alt=""
+              className="dark-light-img"
+            />
+          </button>
         </div>
 
         {/* Topmate Button */}
@@ -151,9 +138,15 @@ const Navbar = ({ theme, setTheme }) => {
         >
           Book 1:1
         </a>
-        <div className="menu" onClick={showNav}>
-          {menu}
-        </div>
+        <button
+          type="button"
+          className="menu"
+          onClick={() => setMenuOpen((isOpen) => !isOpen)}
+          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? <IoCloseSharp /> : <CiMenuFries />}
+        </button>
       </div>
     </nav>
   );
