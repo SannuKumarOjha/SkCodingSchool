@@ -9,7 +9,7 @@ const ProtectedRoutes = ({ children }) => {
     return null; 
   }
 
-  if (!user) {
+  if (!user || user.isVerified !== true) {
     return (
       <Navigate 
         to="/login" 

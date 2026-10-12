@@ -1,5 +1,6 @@
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import User from "../models/userModels.js";
+import PendingSignup from "../models/pendingSignupModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Session } from "../models/sessionModel.js";
@@ -7,9 +8,9 @@ import { sendOtpMail } from "../emailVerify/sendOtpMail.js";
 
 const hashOtp = (otp) => createHash("sha256").update(otp).digest("hex");
 
-const issueSignupOtp = async (user) => {
-  const resendAvailableAt = user.signupOtpSentAt
-    ? user.signupOtpSentAt.getTime() + 60_000
+const issueSignupOtp = async (pendingSignup) => {
+  const resendAvailableAt = pendingSignup.otpSentAt
+    ? pendingSignup.otpSentAt.getTime() + 60_000
     : 0;
 
   if (Date.now() < resendAvailableAt) {
@@ -21,17 +22,17 @@ const issueSignupOtp = async (user) => {
   }
 
   const otp = randomInt(100000, 1000000).toString();
-  user.signupOtpHash = hashOtp(otp);
-  user.signupOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-  user.signupOtpSentAt = new Date();
-  user.signupOtpAttempts = 0;
-  await user.save();
+  pendingSignup.otpHash = hashOtp(otp);
+  pendingSignup.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  pendingSignup.otpSentAt = new Date();
+  pendingSignup.otpAttempts = 0;
+  await pendingSignup.save();
 
   try {
-    await sendOtpMail(user.email, otp, user.username);
+    await sendOtpMail(pendingSignup.email, otp, pendingSignup.username);
   } catch (error) {
-    user.signupOtpSentAt = null;
-    await user.save();
+    pendingSignup.otpSentAt = null;
+    await pendingSignup.save();
     throw error;
   }
 };
@@ -46,24 +47,32 @@ export const registerUser = async (req, res) => {
         message: "Please fill the required fields",
       });
     }
-    let user = await User.findOne({ email });
-    if (user?.isVerified) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser?.isVerified) {
       return res.status(400).json({
         success: false,
         message: "User already exists",
       });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    if (!user) {
-      user = new User({ username, email, password: hashedPassword });
+    let pendingSignup = await PendingSignup.findOne({ email });
+    if (!pendingSignup) {
+      pendingSignup = new PendingSignup({
+        username,
+        email,
+        password: hashedPassword,
+      });
     } else {
-      user.username = username;
-      user.password = hashedPassword;
+      pendingSignup.username = username;
+      pendingSignup.password = hashedPassword;
     }
-    user.isVerified = false;
-    await user.save();
+    await pendingSignup.save();
+    if (existingUser && !existingUser.isVerified) {
+      await User.deleteOne({ _id: existingUser._id });
+    }
+
     try {
-      await issueSignupOtp(user);
+      await issueSignupOtp(pendingSignup);
     } catch (error) {
       if (error.statusCode) {
         throw error;
@@ -71,7 +80,7 @@ export const registerUser = async (req, res) => {
       console.error("Signup verification email failed:", error);
       return res.status(502).json({
         success: false,
-        message: "Your account is saved, but the verification email could not be sent. Please try resending the code.",
+        message: "Your signup is pending, but the verification email could not be sent. Please try resending the code.",
       });
     }
 
@@ -97,7 +106,7 @@ export const registerUser = async (req, res) => {
       console.error("Signup verification email failed:", error);
       return res.status(502).json({
         success: false,
-        message: "Your account is saved, but the verification email could not be sent. Please try resending the code.",
+        message: "Your signup is pending, but the verification email could not be sent. Please try resending the code.",
       });
     }
     console.error("Signup failed:", error);
@@ -122,21 +131,83 @@ export const verifySignupOtp = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
-    if (!user) {
+    const pendingSignup = await PendingSignup.findOne({ email });
+    const legacyUser = pendingSignup
+      ? null
+      : await User.findOne({ email, isVerified: false });
+    if (!pendingSignup && !legacyUser) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
 
-    if (user.isVerified) {
+    if (pendingSignup) {
+      const verifiedUser = await User.findOne({
+        email: pendingSignup.email,
+        isVerified: true,
+      });
+      if (verifiedUser) {
+        await PendingSignup.deleteOne({ _id: pendingSignup._id });
+        return res.status(200).json({
+          success: true,
+          message: "Your email is already verified. You can sign in.",
+        });
+      }
+
+      if (!pendingSignup.otpHash || !pendingSignup.otpExpiresAt) {
+        return res.status(400).json({
+          success: false,
+          message: "No active verification code. Request a new code.",
+        });
+      }
+
+      if (pendingSignup.otpExpiresAt.getTime() <= Date.now()) {
+        pendingSignup.otpHash = null;
+        pendingSignup.otpExpiresAt = null;
+        pendingSignup.otpAttempts = 0;
+        await pendingSignup.save();
+        return res.status(400).json({
+          success: false,
+          message: "The code has expired. Request a new one.",
+        });
+      }
+
+      if (pendingSignup.otpAttempts >= 5) {
+        return res.status(429).json({
+          success: false,
+          message: "Too many incorrect attempts. Request a new code.",
+        });
+      }
+
+      const candidateHash = Buffer.from(hashOtp(otp), "hex");
+      const storedHash = Buffer.from(pendingSignup.otpHash, "hex");
+      if (
+        candidateHash.length !== storedHash.length
+        || !timingSafeEqual(candidateHash, storedHash)
+      ) {
+        pendingSignup.otpAttempts += 1;
+        await pendingSignup.save();
+        return res.status(400).json({
+          success: false,
+          message: "Incorrect verification code.",
+        });
+      }
+
+      await User.create({
+        username: pendingSignup.username,
+        email: pendingSignup.email,
+        password: pendingSignup.password,
+        isVerified: true,
+      });
+      await PendingSignup.deleteOne({ _id: pendingSignup._id });
       return res.status(200).json({
         success: true,
-        message: "Your email is already verified. You can sign in.",
+        message: "Email verified successfully. You can now sign in.",
       });
     }
 
+    const user = legacyUser;
     if (!user.signupOtpHash || !user.signupOtpExpiresAt) {
       return res.status(400).json({
         success: false,
@@ -209,15 +280,48 @@ export const resendSignupOtp = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
-    if (!user || user.isVerified) {
+    const pendingSignup = await PendingSignup.findOne({ email });
+    if (pendingSignup) {
+      await issueSignupOtp(pendingSignup);
+      return res.status(200).json({
+        success: true,
+        message: "A new verification code has been sent.",
+      });
+    }
+
+    const user = await User.findOne({ email, isVerified: false });
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "No unverified signup was found for this email.",
       });
     }
 
-    await issueSignupOtp(user);
+    const resendAvailableAt = user.signupOtpSentAt
+      ? user.signupOtpSentAt.getTime() + 60_000
+      : 0;
+    if (Date.now() < resendAvailableAt) {
+      const retryAfterSeconds = Math.ceil((resendAvailableAt - Date.now()) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: "Please wait before requesting another code.",
+        retryAfterSeconds,
+      });
+    }
+
+    const otp = randomInt(100000, 1000000).toString();
+    user.signupOtpHash = hashOtp(otp);
+    user.signupOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    user.signupOtpSentAt = new Date();
+    user.signupOtpAttempts = 0;
+    await user.save();
+    try {
+      await sendOtpMail(user.email, otp, user.username);
+    } catch (error) {
+      user.signupOtpSentAt = null;
+      await user.save();
+      throw error;
+    }
     return res.status(200).json({
       success: true,
       message: "A new verification code has been sent.",
@@ -282,17 +386,42 @@ export const loginUser = async (req, res) => {
     });
     user.isLoggedIn = true;
     await user.save();
+    const authenticatedUser = user.toObject();
+    delete authenticatedUser.password;
     return res.status(200).json({
       success: true,
       message: `Welcome back ${user.username}`,
       accessToken,
       refreshToken,
-      user,
+      user: authenticatedUser,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    if (!user || user.isVerified !== true) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email first.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Fetching authenticated user failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not validate your session.",
     });
   }
 };

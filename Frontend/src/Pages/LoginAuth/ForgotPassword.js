@@ -25,14 +25,19 @@ const ForgotPassword = () => {
       toast.success(response.data.message);
     } catch (error) {
       const wait = error.response?.data?.retryAfterSeconds;
+      const responseErrors = error.response?.data?.errors;
       toast.error(
         wait
           ? `Please wait ${wait} seconds before requesting another code.`
-          : error.response?.data?.message
-            || (error.request
-              ? "Could not reach the server. Please try again."
-              : error.message)
-            || "Could not send the reset code."
+          : error.response
+            ? error.response.data?.message
+              || (Array.isArray(responseErrors) ? responseErrors.join(" ") : null)
+              || `The server returned an error (${error.response.status}). Please try again.`
+            : error.code === "ECONNABORTED"
+              ? "The server took too long to respond. Please try again."
+              : error.request
+                ? "Could not reach the server. Please try again."
+                : error.message || "Could not send the reset code."
       );
     } finally {
       setIsSending(false);
@@ -65,12 +70,17 @@ const ForgotPassword = () => {
       toast.success(response.data.message);
       navigate("/login", { replace: true });
     } catch (error) {
+      const responseErrors = error.response?.data?.errors;
       toast.error(
-        error.response?.data?.message
-          || (error.request
-            ? "Could not reach the server. Please try again."
-            : error.message)
-          || "Could not reset your password."
+        error.response
+          ? error.response.data?.message
+            || (Array.isArray(responseErrors) ? responseErrors.join(" ") : null)
+            || `The server returned an error (${error.response.status}). Please try again.`
+          : error.code === "ECONNABORTED"
+            ? "The server took too long to respond. Please try again."
+            : error.request
+              ? "Could not reach the server. Please try again."
+              : error.message || "Could not reset your password."
       );
     } finally {
       setIsResetting(false);

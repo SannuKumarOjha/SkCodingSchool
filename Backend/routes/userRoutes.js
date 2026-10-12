@@ -4,6 +4,7 @@ import {
   verifySignupOtp,
   resendSignupOtp,
   loginUser,
+  getCurrentUser,
   logoutUser,
   forgetPassword,
   resetPassword,
@@ -17,6 +18,7 @@ router.post("/register", validateUser(userSchema), registerUser);
 router.post("/verify-otp", verifySignupOtp);
 router.post("/resend-verification-otp", resendSignupOtp);
 router.post("/login", loginUser);
+router.get("/me", isAuthenticated, getCurrentUser);
 router.post("/logout", isAuthenticated, logoutUser);
 router.post("/forgot-password", forgetPassword);
 router.post("/reset-password", resetPassword);

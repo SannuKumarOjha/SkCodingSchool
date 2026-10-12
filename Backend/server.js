@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import dns from 'node:dns';
 import mongoose from 'mongoose';
 import connectDB from './database/db.js';
+import migrateUnverifiedUsers from './database/migrateUnverifiedUsers.js';
 import userRoutes from './routes/userRoutes.js';
 import cors from 'cors';
 import chatRoute from './chatbot/chatRoute.js';
@@ -66,6 +67,10 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-connectDB().catch((err) => {
-    console.error('Database unavailable; database-backed routes will not work:', err);
-});
+connectDB()
+    .then(() => migrateUnverifiedUsers().catch((error) => {
+        console.error('Could not migrate unverified accounts:', error);
+    }))
+    .catch((error) => {
+        console.error('Database unavailable; database-backed routes will not work:', error);
+    });

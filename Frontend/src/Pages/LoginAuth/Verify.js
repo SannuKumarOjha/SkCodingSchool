@@ -10,6 +10,9 @@ const Verify = () => {
   const email = location.state?.email || "";
   const from = location.state?.from || "/";
   const [otp, setOtp] = useState("");
+  const [mailPending, setMailPending] = useState(
+    Boolean(location.state?.mailPending)
+  );
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
@@ -46,6 +49,7 @@ const Verify = () => {
       setIsResending(true);
       const response = await api.post("/user/resend-verification-otp", { email });
       setOtp("");
+      setMailPending(false);
       toast.success(response.data.message);
     } catch (error) {
       const wait = error.response?.data?.retryAfterSeconds;
@@ -74,8 +78,10 @@ const Verify = () => {
         {email ? (
           <>
             <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
-              We sent a 6-digit code to <strong className="break-all">{email}</strong>.
-              Enter it below to activate your account. The code expires in 10 minutes.
+              {mailPending
+                ? <>Your signup is pending, but the code could not be emailed to <strong className="break-all">{email}</strong>. Once the email settings are fixed, use the button below to request a code.</>
+                : <>A 6-digit code was requested for <strong className="break-all">{email}</strong>.
+                  Enter it below to activate your account. The code expires in 10 minutes.</>}
             </p>
             <form className="mt-7 space-y-4" onSubmit={handleVerify}>
               <label className="sr-only" htmlFor="signup-otp">
@@ -118,7 +124,11 @@ const Verify = () => {
               disabled={isResending || isVerifying}
               className="mt-5 text-sm font-semibold text-blue-600 hover:underline disabled:opacity-60 dark:text-blue-400"
             >
-              {isResending ? "Sending a new code..." : "Resend code"}
+              {isResending
+                ? "Sending a new code..."
+                : mailPending
+                  ? "Try sending code again"
+                  : "Resend code"}
             </button>
           </>
         ) : (

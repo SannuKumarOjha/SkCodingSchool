@@ -18,6 +18,7 @@ export const sendOtpMail = async (
     username = "there",
     purpose = "verify your email address"
 ) => {
+    const isPasswordReset = purpose === "reset your password";
     const transporter = nodemailer.createTransport({
         service: "gmail",
         connectionTimeout: 15000,
@@ -29,10 +30,28 @@ export const sendOtpMail = async (
         }
     });
     const mailOptions = {
-        from: process.env.MAIL_USER,
+        from: `"SKCodingSchool" <${process.env.MAIL_USER}>`,
         to: email,
-        subject: "Your SKCodingSchool security code",
+        subject: isPasswordReset
+            ? "SKCodingSchool | Password reset code"
+            : "SKCodingSchool | Verify your email",
         html: emailTemplate({ username, otp, purpose }),
+        text: [
+            "SKCodingSchool account security",
+            "",
+            `Hello ${username},`,
+            "",
+            `Use this one-time code to ${purpose}:`,
+            "",
+            `  ${otp}`,
+            "",
+            "This code expires in 10 minutes. Enter it only on the SKCodingSchool website.",
+            "Never share this code with anyone.",
+            "",
+            "If you did not request this code, you can ignore this email.",
+            "",
+            "Automated message from SKCodingSchool. Please do not reply.",
+        ].join("\n"),
     };
     await transporter.sendMail(mailOptions);
 };

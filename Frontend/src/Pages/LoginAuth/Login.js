@@ -50,15 +50,16 @@ const Login = () => {
         navigate(from, { replace: true });
       }
     } catch (error) {
-      console.log("AXIOS ERROR:", error.response?.data);
-      console.log("STATUS:", error.response?.status);
-      const message = error.code === "ECONNABORTED"
-        ? "The server took too long to respond. Please try again in a moment."
-        : error.response?.data?.message
-          || (error.request
+      const responseErrors = error.response?.data?.errors;
+      const message = error.response
+        ? error.response.data?.message
+          || (Array.isArray(responseErrors) ? responseErrors.join(" ") : null)
+          || `The server returned an error (${error.response.status}). Please try again.`
+        : error.code === "ECONNABORTED"
+          ? "The server took too long to respond. Please try again in a moment."
+          : error.request
             ? "Could not reach the server. Check the backend service and try again."
-            : error.message)
-          || "Login failed";
+            : error.message || "Login failed";
       toast.error(message);
     } finally {
       setIsLoading(false);
